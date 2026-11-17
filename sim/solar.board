@@ -1,0 +1,19 @@
+# OreSat solar card (SOLAR_V5): STM32F091RC on a 16 MHz crystal, I2C2 carries the INA226 power monitor and the two
+# TMP101 cell temperature sensors. The node id (DATA0 option byte, set on hardware by flash_node_id.py) is
+# 0x0C, solar_1 in oresat-configs' 0.5 card list.
+rcc:
+    hseFrequency: 16000000
+
+flash_ctrl:
+    optionByteData0: 0x0C
+
+ina226: I2C.ScriptedI2cSlave @ i2c2 0x40
+    file: "sim/ina226.py"
+
+cell1: I2C.ScriptedI2cSlave @ i2c2 0x48
+    file: "sim/tmp101.py"
+    config: "{\"celsius\": 21}"
+
+cell2: I2C.ScriptedI2cSlave @ i2c2 0x4A
+    file: "sim/tmp101.py"
+    config: "{\"celsius\": 23}"

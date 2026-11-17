@@ -1,0 +1,17 @@
+#!/bin/sh
+# Runs the flown OreSat 0.5 card firmware (solar, battery, protocard) on three simulated STM32F091RCs on one
+# CAN bus, with a scripted CANopen master, and prints what the master reads from the cards over CANopen.
+# Usage: ./demo [virtual-seconds]      Needs `sim` 0.10.3 or newer on PATH (or SIM=/path/to/sim).
+set -eu
+SIM="${SIM:-sim}"
+cd "$(dirname "$0")"
+command -v "$SIM" >/dev/null || { echo "sim not found. Install it: curl -fsSL https://simantic.com/install | sh" >&2; exit 1; }
+case "$("$SIM" --version 2>/dev/null)" in
+  "sim 0.10.0"*|"sim 0.10.1"*|"sim 0.10.2"*|"sim 0.9."*|"sim 0.8."*)
+    echo "note: this demo needs sim 0.10.3 or newer (node ids and 16-bit CAN filters); run \`sim update\`" >&2 ;;
+esac
+"$SIM" run --scenario sim/scenario.yaml --timeout "${1:-11}" 2>&1 | awk '
+  /\[c3\] .*(boot-up|operational|stopped)/ || /\[c3\] heartbeat/ || /\[c3\] SDO upload ok/ || /\[c3\] SDO download ok/ || /\[c3\] NMT (stop|start)/ {
+    sub(/^.*\[c3\] /, ""); sub(/SDO upload ok /, "read  "); sub(/SDO download ok /, "wrote "); print; n++; fflush() }
+  /^Elapsed:/ { e = $2 }
+  END { printf "done: %d CANopen exchanges with 2 flight cards over one simulated CAN bus (%s wall)\n", n, e }'
