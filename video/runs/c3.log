@@ -1,0 +1,66 @@
+[c3] NMT node(0x30) boot-up
+[c3] NMT solar_1(0x0C) boot-up
+[c3] TPDO1 solar_1(0x0C) data=0000000000000000
+[c3] TPDO2 solar_1(0x0C) data=0000000000000000
+[c3] TPDO3 solar_1(0x0C) data=00000000
+[c3] TPDO4 solar_1(0x0C) data=000000000000
+[c3] NMT battery_1(0x04) boot-up
+[c3] TPDO1 battery_1(0x04) data=0000000000000000
+[c3] TPDO2 battery_1(0x04) data=000000000000
+[c3] TPDO3 battery_1(0x04) data=0000000000000000
+[c3] TPDO4 battery_1(0x04) data=00000000
+[c3] NMT node(0x30) operational
+[c3] NMT solar_1(0x0C) operational
+[c3] NMT battery_1(0x04) operational
+[c3] SDO upload solar_1(0x0C) 1000:00 device_type
+[c3] SDO upload ok solar_1(0x0C) 1000:00 device_type = 0 
+[c3] heartbeat node(0x30) every 1000 ms
+[c3] heartbeat solar_1(0x0C) every 1000 ms
+[c3] heartbeat battery_1(0x04) every 1000 ms
+[c3] SDO upload solar_1(0x0C) 4000:01 output.voltage
+[c3] SDO upload ok solar_1(0x0C) 4000:01 output.voltage = 4800 mV
+[c3] SDO upload solar_1(0x0C) 4000:02 output.current
+[c3] SDO upload ok solar_1(0x0C) 4000:02 output.current = 150 mA
+[c3] SDO upload solar_1(0x0C) 4000:03 output.power
+[c3] SDO upload ok solar_1(0x0C) 4000:03 output.power = 720 mW
+[c3] SDO upload solar_1(0x0C) 4001:01 cell_1.temperature
+[c3] SDO upload ok solar_1(0x0C) 4001:01 cell_1.temperature = 21 C
+[c3] SDO upload solar_1(0x0C) 4002:01 cell_2.temperature
+[c3] SDO upload ok solar_1(0x0C) 4002:01 cell_2.temperature = 23 C
+[c3] SDO upload battery_1(0x04) 4000:01 pack_1.vbatt
+[c3] SDO upload ok battery_1(0x04) 4000:01 pack_1.vbatt = 7400 mV
+[c3] SDO upload battery_1(0x04) 4000:04 pack_1.vcell
+[c3] SDO upload ok battery_1(0x04) 4000:04 pack_1.vcell = 3700 mV
+[c3] SDO upload battery_1(0x04) 4000:08 pack_1.current
+[c3] SDO upload ok battery_1(0x04) 4000:08 pack_1.current = -150 mA
+[c3] SDO upload battery_1(0x04) 4000:12 pack_1.temperature
+[c3] SDO upload ok battery_1(0x04) 4000:12 pack_1.temperature = 24 C
+[c3] SDO upload battery_1(0x04) 4000:11 pack_1.reported_state_of_charge
+[c3] SDO upload ok battery_1(0x04) 4000:11 pack_1.reported_state_of_charge = 98 %
+[c3] SDO upload battery_1(0x04) 4001:04 pack_2.vcell
+[c3] SDO upload ok battery_1(0x04) 4001:04 pack_2.vcell = 3650 mV
+[c3] SDO upload battery_1(0x04) 4001:12 pack_2.temperature
+[c3] SDO upload ok battery_1(0x04) 4001:12 pack_2.temperature = 26 C
+[c3] SDO upload solar_1(0x0C) 1017:00 producer_heartbeat_time
+[c3] SDO upload ok solar_1(0x0C) 1017:00 producer_heartbeat_time = 1000 ms
+[c3] SDO download solar_1(0x0C) 1017:00 producer_heartbeat_time = 250
+[c3] SDO download ok solar_1(0x0C) 1017:00
+[c3] SDO upload solar_1(0x0C) 1017:00 producer_heartbeat_time
+[c3] SDO upload ok solar_1(0x0C) 1017:00 producer_heartbeat_time = 250 ms
+[c3] heartbeat solar_1(0x0C) every 250 ms
+[c3] NMT stop solar_1(0x0C)
+[c3] NMT solar_1(0x0C) stopped
+[c3] NMT start solar_1(0x0C)
+[c3] NMT solar_1(0x0C) operational
+[c3] heartbeat solar_1(0x0C) every 1250 ms
+[c3] heartbeat solar_1(0x0C) every 250 ms
+[c3] TPDO1 solar_1(0x0C) data=c0129600d002c012
+[c3] TPDO2 solar_1(0x0C) data=9600d002c0129600
+[c3] TPDO3 solar_1(0x0C) data=d0020c00
+[c3] TPDO4 solar_1(0x0C) data=151715171517
+[c3] TPDO1 battery_1(0x04) data=e81c740e600e740e
+[c3] TPDO2 battery_1(0x04) data=740e740e740e
+[c3] TPDO3 battery_1(0x04) data=6aff6aff00000000
+[c3] TPDO4 battery_1(0x04) data=18181918
+[c3] SDO upload solar_1(0x0C) 4000:01 output.voltage
+[c3] SDO upload ok solar_1(0x0C) 4000:01 output.voltage = 4800 mV

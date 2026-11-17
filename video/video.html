@@ -1,0 +1,161 @@
+<!doctype html><meta charset="utf-8">
+<!-- OreSat demo video (Simantic video kit). ./make.sh fetches the kit into .kit/, writes data.js from runs/ and
+     renders oresat-demo.mp4. Open this page in a browser to play it; ?t=30 holds a frame. -->
+<link rel="stylesheet" href=".kit/assets/base.css"><link rel="stylesheet" href=".kit/assets/video.css">
+<style>
+.ob { padding: 16px 22px; } .ob .k { font: 500 17px var(--mono); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.ob .v { font: 500 28px/1.25 var(--sans); margin-top: 4px; } .ob .s { font: 400 20px/1.3 var(--sans); color: var(--muted); margin-top: 3px; }
+.osim { border: 2px dashed var(--sim); border-radius: 6px; background: #e4efec; } .osim .k { color: var(--sim); }
+.olegend { font: 400 21px var(--sans); color: var(--muted); display: flex; gap: 34px; }
+.olegend span { display: flex; align-items: center; gap: 10px; } .olegend i { width: 22px; height: 14px; border-radius: 3px; display: block; }
+.vals { padding: 18px 24px; } .vals h3 { font: 500 17px var(--mono); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin: 0 0 8px; }
+.vrow { display: flex; justify-content: space-between; font: 400 22px/1.65 var(--mono); border-bottom: 1px solid var(--line); }
+.vrow b { font-weight: 500; } .vrow span { color: var(--muted); }
+</style>
+<body>
+<script src="data.js"></script><script src=".kit/assets/video.js"></script>
+<script>
+const D = window.DATA;   // every number on screen comes from data.js (collect.py, from the recorded run)
+const NODES = [["12", "solar card", "0x0C"], ["4", "battery card", "0x04"], ["48", "protocard", "0x30"]];
+const LANES = [["c3", "C3 (master)"], ...NODES.map(([n, name, id]) => [n, `${name} ${id}`])];
+const reads = D.sdo.filter(s => s.op == "read"), write = D.sdo.find(s => s.op == "write");
+const [stop, start] = D.nmt, P = D.pdo_resumed;
+const pretty = l => l.replace("reported_state_of_charge", "state of charge").replace(/[._]/g, " ");
+const unit = u => u == "C" ? "°C" : u;
+const ms = x => (x * 1000).toFixed(1);
+
+// The bus timeline: one lane per node, virtual time across, drawn up to the playhead vt.
+const tlHTML = (p, w, h = 470) => `<svg class="abs" id="${p}-tl" style="left:0;top:0" width="${w}" height="${h}"></svg>`;
+function drawTL(p, w, w0, w1, vt, mark = {}) {
+  const X0 = 250, X1 = w - 20, x = t => X0 + (t - w0) / (w1 - w0) * (X1 - X0), ly = i => 40 + i * 100, on = t => t >= w0 && t <= Math.min(vt, w1);
+  let g = "";
+  LANES.forEach(([k, name], i) => {
+    g += `<text x="0" y="${ly(i) + 7}" font-family="var(--mono)" font-size="19" fill="#111">${name}</text>
+          <line x1="${X0}" y1="${ly(i)}" x2="${X1}" y2="${ly(i)}" stroke="#d9d9d3" stroke-width="2"/>`;
+  });
+  const step = (w1 - w0) > 2.5 ? 1 : 0.5;
+  for (let s = Math.ceil(w0 / step) * step; s <= w1; s += step)
+    g += `<line x1="${x(s)}" y1="${ly(3) + 30}" x2="${x(s)}" y2="${ly(3) + 40}" stroke="#8a8a84"/><text x="${x(s)}" y="${ly(3) + 64}" font-family="var(--mono)" font-size="17" fill="#8a8a84" text-anchor="middle">${s.toFixed(step < 1 ? 1 : 0)} s</text>`;
+  NODES.forEach(([n], i) => (D.heartbeats[n] || []).forEach(([t, st]) => {
+    if (!on(t)) return;
+    const y = ly(i + 1);
+    if (st == 0) g += `<circle cx="${x(t)}" cy="${y}" r="11" fill="var(--sim)"/>` + (mark.boot ? `<text x="${x(t) + 18}" y="${y - 16}" font-family="var(--mono)" font-size="18" fill="#111">boot-up ${ms(t)} ms</text>` : "");
+    else if (st == 4) g += `<rect x="${x(t) - 3}" y="${y - 16}" width="6" height="32" fill="none" stroke="#8a8a84" stroke-width="2"/>`;
+    else g += `<rect x="${x(t) - 3}" y="${y - 16}" width="6" height="32" fill="#111"/>`;
+  }));
+  D.sdo.forEach(s => {
+    const i = NODES.findIndex(([n]) => +n == s.node) + 1;
+    if (on(s.t)) g += `<path d="M${x(s.t) - 8},${ly(0) - 9} L${x(s.t) + 8},${ly(0) - 9} L${x(s.t)},${ly(0) + 9} Z" fill="${s.op == "write" ? "var(--sim)" : "#111"}"/>`;
+    if (on(s.t_reply)) g += `<line x1="${x(s.t)}" y1="${ly(0) + 10}" x2="${x(s.t_reply)}" y2="${ly(i) - 12}" stroke="${s.op == "write" ? "var(--sim)" : "#bdbdb6"}" stroke-width="1.5"/>
+                             <rect x="${x(s.t_reply) - 7}" y="${ly(i) - 7}" width="14" height="14" fill="#fff" stroke="#111" stroke-width="2"/>`;
+  });
+  D.nmt.forEach(m => { if (on(m.t)) g += `<rect x="${x(m.t) - 9}" y="${ly(0) - 9}" width="18" height="18" transform="rotate(45 ${x(m.t)} ${ly(0)})" fill="var(--sim)"/>
+      <line x1="${x(m.t)}" y1="${ly(0) + 12}" x2="${x(m.t)}" y2="${ly(1) - 20}" stroke="var(--sim)" stroke-width="2" stroke-dasharray="5 5"/>
+      <text x="${x(m.t) + 16}" y="${ly(0) - 14}" font-family="var(--mono)" font-size="18" fill="var(--sim)">NMT ${m.cmd}</text>`; });
+  if (mark.pdo && on(P.t)) g += `<rect x="${x(P.t) - 4}" y="${ly(1) - 24}" width="54" height="48" rx="3" fill="#e4efec" stroke="var(--sim)" stroke-width="2"/><text x="${x(P.t) + 23}" y="${ly(1) + 7}" font-family="var(--mono)" font-size="17" fill="var(--sim)" text-anchor="middle">PDO</text>`;
+  (mark.gaps || []).forEach(([t0, t1, txt]) => { if (on(t1)) g += `<line x1="${x(t0)}" y1="${ly(1) + 30}" x2="${x(t1)}" y2="${ly(1) + 30}" stroke="var(--sim)" stroke-width="2"/>
+      <text x="${(x(t0) + x(t1)) / 2}" y="${ly(1) + 54}" font-family="var(--mono)" font-size="18" fill="var(--sim)" text-anchor="middle">${txt}</text>`; });
+  if (vt <= w1) g += `<line x1="${x(vt)}" y1="10" x2="${x(vt)}" y2="${ly(3) + 30}" stroke="var(--sim)" stroke-width="1.5" opacity="0.6"/>`;
+  $(`#${p}-tl`).innerHTML = g;
+}
+const sweep = (t, a, w0, w1, d) => lerp(w0, w1, prog(t, a + 0.8, a + d));
+
+// satellite cutaway: a 1U-style frame with the cards on the CAN backplane (illustration)
+const cutaway = `<svg class="abs" style="left:0;top:20px" width="560" height="640">
+  <rect x="40" y="20" width="420" height="560" rx="10" fill="#e4efec" stroke="var(--sim)" stroke-width="2" stroke-dasharray="8 6"/>
+  <g stroke="#111" stroke-width="2" fill="#fff">${[0,1,2,3].map(i => `<rect x="90" y="${70 + i * 125}" width="260" height="80" rx="4"/>`).join("")}</g>
+  <line x1="400" y1="60" x2="400" y2="540" stroke="var(--sim)" stroke-width="6"/>
+  ${[0,1,2,3].map(i => `<line x1="350" y1="${110 + i * 125}" x2="400" y2="${110 + i * 125}" stroke="var(--sim)" stroke-width="3"/>`).join("")}
+  ${["C3 (master)", "solar card", "battery card", "protocard"].map((n, i) => `<text x="220" y="${118 + i * 125}" font-family="var(--sans)" font-size="24" text-anchor="middle" fill="#111">${n}</text>`).join("")}
+  <text x="412" y="575" font-family="var(--mono)" font-size="17" fill="var(--sim)">CAN</text>
+  <text x="40" y="620" font-family="var(--sans)" font-size="17" fill="#8a8a84">illustration</text></svg>`;
+
+Video({
+  title: "OreSat0.5 flight firmware on a simulated CAN bus",
+  logo: ".kit/assets/logo-full.svg",
+  steps: [["setup", "Setup"], ["boot", "Boot"], ["telemetry", "Telemetry"], ["config", "Reconfigure"], ["nmt", "Restart"], ["bus", "Bus"]],
+  scenes: [
+    { key: "title", from: 0, to: 5,
+      html: `<div class="center title" style="bottom:120px"><h1>A CubeSat's flight cards,<br>on a simulated bus</h1><p>Three cards of Portland State's OreSat0.5, built from unmodified source, each on a simulated STM32F091.</p></div>
+        <svg class="abs" style="left:280px;top:520px" width="1200" height="170" id="ti-orb">
+          <path d="M0,170 Q600,-30 1200,170" fill="none" stroke="#111" stroke-width="1.5" stroke-dasharray="5 7"/>
+          <path d="M120,170 Q600,60 1080,170" fill="#fff" stroke="#111" stroke-width="2"/>
+          <text x="600" y="155" font-family="var(--sans)" font-size="22" text-anchor="middle" fill="#111">Earth</text><text x="1200" y="40" font-family="var(--sans)" font-size="17" text-anchor="end" fill="#8a8a84">illustration</text>
+          <g id="ti-sat"><rect x="-12" y="-12" width="24" height="24" rx="2" fill="var(--sim)" stroke="#111" stroke-width="1.5"/></g></svg>`,
+      draw(t, a, e) {
+        appear($("h1", e), t, a + 0.3, 0.8); appear($("p", e), t, a + 1.0, 0.8); appear($("#ti-orb"), t, a + 1.5, 0.8);
+        const u = 0.15 + 0.7 * prog(t, a, a + 5), bx = 1200 * u, by = Math.pow(1 - u, 2) * 170 + 2 * u * (1 - u) * -30 + u * u * 170;   // on the dashed orbit
+        $("#ti-sat").setAttribute("transform", `translate(${bx} ${by}) rotate(${t * 20})`);
+      } },
+
+    { key: "setup", from: 5, to: 16, step: "setup",
+      caption: ["Setup", "Real card firmware; everything around it is simulated.",
+        (t, a) => t < a + 5.5 ? "Each card's chip and its sensors are simulated, so the firmware runs as it flew." : "OreSat's C3 is a Linux computer, so a script plays it: the CANopen master."],
+      html: cutaway + `
+        <div class="abs olegend" style="left:620px;top:0" id="se-leg"><span><i style="background:#fff;border:1.5px solid var(--ink)"></i>real firmware, unmodified</span><span><i class="osim"></i>simulated</span></div>
+        ${[["solar card", "node 0x0C", "INA226 power monitor, 2× TMP101 cell temperature"], ["battery card", "node 0x04", "2× MAX17205 fuel gauge, one per pack"], ["protocard", "node 0x30", ""]]
+          .map(([n, id, s], i) => `<div class="abs osim ob" style="left:620px;top:${70 + i * 150}px;width:1140px;height:128px" id="se-c${i}">
+             <div class="k">STM32F091 · simulated · CANopen ${id}</div>
+             <div class="card ob" style="position:absolute;left:22px;top:46px;width:420px;padding:10px 16px"><div class="v" style="margin:0;font-size:24px">${n} firmware</div></div>
+             <div class="s" style="position:absolute;left:470px;top:56px">${s ? "sensor peers: " + s : "no sensors attached"}</div></div>`).join("")}
+        <div class="abs osim ob" style="left:620px;top:520px;width:1140px;height:110px" id="se-c3"><div class="k">C3 flight computer · played by a script</div><div class="v">CANopen master: reads values, writes settings, starts and stops cards</div></div>`,
+      draw(t, a) {
+        appear($("#se-leg"), t, a + 0.4);
+        for (let i = 0; i < 3; i++) appear($("#se-c" + i), t, a + 0.9 + i * 0.6);
+        appear($("#se-c3"), t, a + 3.2);
+      } },
+
+    { key: "boot", from: 16, to: 26, step: "boot",
+      caption: ["Boot", "Each card boots and announces itself on the CAN bus.",
+        (t, a) => t < a + 5 ? `All three boot-up messages within ${ms(Math.max(...NODES.map(([n]) => D.heartbeats[n][0][0])))} ms of reset.` : "Then a heartbeat every second: each card saying it is alive."],
+      html: tlHTML("bo", 1760),
+      draw(t, a) { drawTL("bo", 1760, 0, 3, sweep(t, a, 0, 3.05, 8), { boot: t < a + 5.2 }); } },
+
+    { key: "telemetry", from: 26, to: 40, step: "telemetry",
+      caption: ["Telemetry", "The master reads each card's telemetry over CANopen.",
+        (t, a) => t < a + 6.5 ? "Each reply is built by the card's firmware from its own sensor reads." : "Solar output, cell temperatures, both battery packs, state of charge."],
+      html: tlHTML("te", 1060) + `
+        <div class="abs card stack vals" style="left:1110px;top:0;width:650px" id="te-v">
+          <h3>Solar card</h3><div id="te-s"></div><h3 style="margin-top:16px">Battery card</h3><div id="te-b"></div></div>`,
+      draw(t, a) {
+        const vt = sweep(t, a, 1.4, 4.75, 11);
+        drawTL("te", 1060, 1.4, 4.8, vt);
+        const row = s => `<div class="vrow"><span>${pretty(s.label)}</span><b>${s.value} ${unit(s.unit)}</b></div>`;
+        $("#te-s").innerHTML = reads.filter(s => s.node == 12 && s.t < 3 && s.label != "device_type" && s.t_reply <= vt).map(row).join("");
+        $("#te-b").innerHTML = reads.filter(s => s.node == 4 && s.t_reply <= vt).map(row).join("");
+      } },
+
+    { key: "config", from: 40, to: 51, step: "config",
+      caption: ["Reconfigure", `The master changes a setting: the solar heartbeat, ${D.gaps_before[0]} → ${write.value} ms.`,
+        `One SDO write to object 1017h; from then on the card beats ${D.gaps_before[0] / write.value} times as often.`],
+      html: tlHTML("cf", 1760),
+      draw(t, a) {
+        const hb = D.heartbeats["12"].map(h => h[0]), i0 = hb.findIndex(x => x > write.t_reply);
+        drawTL("cf", 1760, 4.3, 7.9, sweep(t, a, 4.3, 7.9, 8.5),
+               { gaps: [[hb[i0 - 1], hb[i0], `${D.gaps_before[0]} ms`], [hb[i0 + 1], hb[i0 + 2], `${D.gaps_after[0]} ms`]] });
+      } },
+
+    { key: "nmt", from: 51, to: 63, step: "nmt",
+      caption: ["Restart", "The master stops the solar card, then starts it again.",
+        (t, a) => t < a + 6.5 ? "Stopped, it keeps its heartbeat (hollow) but sends no telemetry." : `Restarted, its telemetry comes back: ${D.pdo_resumed_values.join(" · ")}, the values it reported earlier.`],
+      html: tlHTML("nm", 1760),
+      draw(t, a) { drawTL("nm", 1760, 7.6, 10.9, sweep(t, a, 7.6, 10.9, 9), { pdo: true }); } },
+
+    { key: "bus", from: 63, to: 69, step: "bus",
+      caption: ["Bus", "Every reply on the bus comes from the unmodified card firmware.", `The master's requests come from its script. ${D.duration} s of simulated time, ${D.sim}.`],
+      html: `<div class="abs" style="left:0;top:40px" id="bu-n"><div class="label">CAN frames on the bus</div><div class="bignum" id="bu-c"></div></div>
+             <div class="abs card stack ob" style="left:900px;top:60px;width:760px" id="bu-k"></div>`,
+      setup() {
+        const c = D.counts;
+        $("#bu-k").innerHTML = [["heartbeats and boot-ups (cards)", c.heartbeat], ["PDOs, telemetry the cards push (cards)", c.pdo], ["SDO replies (cards)", c.sdo_reply], ["SDO requests (master script)", c.sdo_request], ["NMT commands (master script)", c.nmt]]
+          .map(([k, v]) => `<div class="vrow"><span>${k}</span><b>${v}</b></div>`).join("");
+      },
+      draw(t, a) { appear($("#bu-n"), t, a + 0.4); $("#bu-c").textContent = count(t, a + 0.6, a + 2.6, 0, D.frames); appear($("#bu-k"), t, a + 1.6); } },
+
+    { key: "end", from: 69, to: 74,
+      html: `<div class="center end" style="bottom:-100px"><img src=".kit/assets/logo-full.svg"><p>Real firmware. Simulated hardware.</p><div class="u">simantic.com</div></div>`,
+      draw(t, a, e) { appear($("img", e), t, a + 0.4, 0.8); appear($("p", e), t, a + 1.0, 0.8); appear($(".u", e), t, a + 1.6, 0.8); } },
+  ],
+});
+</script>
+</body>
