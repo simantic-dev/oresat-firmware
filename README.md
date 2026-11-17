@@ -8,6 +8,12 @@ file in this fork is changed; this README, `./demo` and `sim/` are added.
 
 ![The CANopen master reading the solar and battery cards over the simulated CAN bus](media/oresat-demo.gif)
 
+**Explainer video (74 s):** what is real and what is simulated, the boot, the telemetry the master reads, the heartbeat
+reconfiguration, and the stop and restart, drawn from every CAN frame of one recorded run (`video/`; every number on
+screen comes from `video/runs/`).
+
+[![OreSat explainer video, click to play](video/poster.png)](video/oresat-demo.mp4)
+
 ```sh
 ./demo        # needs `sim` 0.10.3 or newer: curl -fsSL https://simantic.com/install | sh, then `sim update`
 ```
