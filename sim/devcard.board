@@ -1,0 +1,10 @@
+# OreSat protocard (the blinky template card) on the same bus, node id 0x30. It also hosts the C3 stand-in: a
+# scripted peer cannot talk to the machine it is parked on, so the bus master sits on a card that is not under test.
+rcc:
+    hseFrequency: 16000000
+
+flash_ctrl:
+    optionByteData0: 0x30
+
+c3: CAN.ScriptedCanNode @ sysbus 0xA0000030
+    file: "sim/c3_peer.py"

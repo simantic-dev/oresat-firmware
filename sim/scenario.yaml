@@ -1,0 +1,18 @@
+# OreSat 0.5 cards on one simulated CAN bus. Run from the repository root: ./demo
+machines:
+  solar:
+    mcu: STM32F091RC
+    elf: app_solar.elf
+    overlay: solar.board
+  battery:
+    mcu: STM32F091RC
+    elf: app_battery.elf
+    overlay: battery.board
+  devcard:
+    mcu: STM32F091RC
+    elf: app_protocard.elf
+    overlay: devcard.board
+media:
+  - type: can
+    connect: [solar.can, battery.can, devcard.can, devcard.c3]
+timeout: 12

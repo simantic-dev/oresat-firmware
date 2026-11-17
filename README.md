@@ -4,7 +4,16 @@ This is Simantic's fork of the Portland State Aerospace Society's OreSat firmwar
 unmodified, on simulated STM32F091RC microcontrollers: a solar card, a battery card and a protocard on one CAN bus, with a
 scripted C3 as the CANopen master. The cards boot, announce themselves with NMT boot-up, heartbeat, answer SDO reads and
 writes, obey NMT commands and publish their TPDOs, all over the simulated bus. No board, no bench. No firmware or source
-file in this fork is changed; only this README.
+file in this fork is changed; this README, `./demo` and `sim/` are added.
+
+![The CANopen master reading the solar and battery cards over the simulated CAN bus](media/oresat-demo.gif)
+
+```sh
+./demo        # needs `sim` 0.10.3 or newer: curl -fsSL https://simantic.com/install | sh, then `sim update`
+```
+
+The GIF is real time: 11 s of virtual time take about 12 s on an Apple M-series Mac. Every value is what a flight card
+answered over CANopen; the sensor readings behind them come from the Python peers listed below.
 
 **Which firmware:** `main` of this repository is the Zephyr port, a manifest repository whose apps live in separate
 repositories and whose solar and magnetometer cards target an NXP MCXN947, which `sim models` does not list; its STM32
@@ -13,8 +22,8 @@ on branch **`oresat05-master`**, the code the OreSat0.5 cards fly: all of its ca
 one bus. The ELFs were built from commit `1494f1c` of that branch (ChibiOS `d96c2af`, CANopenNode `8c7d852`) with the
 stock `make`, plus `USE_BOOTLOADER=no` (link at 0x08000000 rather than behind the OreSat bootloader) and, for the battery
 card, `USE_COPT=-DDEBUG_PRINT` (the debug console the solar app already has on). Both are variables the Makefiles define.
-The scenario, peers and pre-built ELFs live in Simantic's `sim-fixtures` repository (branch `oresat/can-network`,
-`tests/stm/oresat/can-network/`), not here; both are GPL-3.0, like this repository.
+The scenario (`sim/scenario.yaml`), board files, Python peers and pre-built ELFs are in `sim/`; the ELFs are GPL-3.0
+binaries of the source above, and `sim/build.sh` rebuilds them from a checkout.
 
 **The scenario**, as `sim graph --scenario` prints it. The square boxes are the simulated MCUs running the firmware, the
 rounded boxes are the modelled parts around them, and the hexagon is the CAN bus. `c3` is the CANopen master; it is parked
@@ -61,7 +70,7 @@ current, temperature and state of charge (after its first pack-read loop, which 
 build prints the gauge's whole register map first); 5.0 to 5.2 s, reads the solar card's heartbeat producer time (1000 ms),
 writes 250 ms, reads it back; 8.0 s NMT stop and 9.0 s NMT start to the solar card; 10.2 s a last SDO read.
 
-**What the test asserts** (`test.yaml`): the run must show
+**What our simulator CI checks on every change** (Simantic's own test of this scenario): the run must show
 - solar console: `Starting TMP101`, `Running solar app...`, `Done with init INA226, running main loop....`;
 - battery console: `Starting battery Node ID: 0x4`, `max17205Start(Pack 1) = 1` and `(Pack 2) = 1`,
   `All NV RAM elements now match expected values.`, `Batteries are not critically low`, and the first pack read,
@@ -114,16 +123,13 @@ and, from `--frames`, the first SDO exchange on the wire (device type of the sol
 [solar] [1.500333s] (can0) CAN Tx id=0x58C dlc=8 data=43 00 10 00 00 00 00 00
 ```
 
-The run exits 0 in about 4 s of wall clock for 12 s of virtual time. It needs two fixes to the simulator (below); with an
-earlier `sim` the `sim-fixtures` smoke runner rejects the `optionByteData0` board key. To re-run it, check out
-`sim-fixtures` at the PR branch (`oresat/can-network`) and, from its root:
+It needs `sim` 0.10.3 or newer, which adds the two simulator fixes below (an earlier `sim` rejects the
+`optionByteData0` board key). `./demo` filters the CANopen master's lines; to see every card's console and every CAN
+frame, run the scenario directly from the repository root:
 
 ```
-python3 scripts/run_smoke.py <sim> --engine pyrite tests/stm/oresat/can-network
+sim run --scenario sim/scenario.yaml --timeout 12
 ```
-
-(`test.yaml` carries the harness-only `expect_log*` keys, which `sim run` on its own rejects.) `solar-alone` and
-`battery-alone` in the same directory run each card alone with only the C3 for company.
 
 **Configurations tried:**
 

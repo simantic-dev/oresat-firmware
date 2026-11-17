@@ -1,0 +1,18 @@
+# OreSat battery card (BATTERY_V3): STM32F091RC on a 16 MHz crystal, one MAX17205 gauge per pack (I2C1 = pack 1,
+# I2C2 = pack 2), each at 0x36 (registers 0x000-0x0FF) and 0x0B (0x100-0x1FF). Node id 0x04, battery_1.
+rcc:
+    hseFrequency: 16000000
+
+flash_ctrl:
+    optionByteData0: 0x04
+
+pack1: I2C.ScriptedI2cSlave @ i2c1 0x36
+    file: "sim/max17205.py"
+pack1_hi: I2C.ScriptedI2cSlave @ i2c1 0x0B
+    file: "sim/max17205.py"
+pack2: I2C.ScriptedI2cSlave @ i2c2 0x36
+    file: "sim/max17205.py"
+    config: "{\"cell_mv\": 3650, \"temp_c\": 26, \"current_ma\": -120}"
+pack2_hi: I2C.ScriptedI2cSlave @ i2c2 0x0B
+    file: "sim/max17205.py"
+    config: "{\"cell_mv\": 3650, \"temp_c\": 26, \"current_ma\": -120}"
