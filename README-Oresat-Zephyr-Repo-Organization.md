@@ -1,3 +1,5 @@
+> **[Simantic](https://simantic.com)** runs this firmware on simulated hardware, no board needed. Try it at [simantic.com](https://simantic.com).
+
 # Zephyr Firmware Plan for Oresat 1.0
 
 **Updated 13-Nov-2026**
